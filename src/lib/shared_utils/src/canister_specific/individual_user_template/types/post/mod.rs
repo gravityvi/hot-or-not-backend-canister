@@ -1,15 +1,22 @@
 use candid::{CandidType, Deserialize, Principal};
 use serde::Serialize;
+use core::fmt;
 use std::{
     collections::HashSet,
-    time::{Duration, SystemTime},
+    time::{Duration, SystemTime}, fmt::Debug,
 };
+use ic_stable_structures::BTreeMap;
 
 use crate::canister_specific::individual_user_template::types::profile::UserProfileDetailsForFrontend;
 
-use super::hot_or_not::{BettingStatus, HotOrNotDetails};
+use super::hot_or_not::{BettingStatus, HotOrNotDetails, AggregateStats, RoomDetails, BetDetails};
 
-#[derive(CandidType, Clone, Deserialize, Debug, Serialize)]
+use crate::canister_specific::individual_user_template::memory::{Memory, self};
+
+pub type RoomDetailsMap = BTreeMap<(u8, u64), RoomDetails, Memory>;
+pub type BetsPlacedMap = BTreeMap<(u64, u64), BetDetails, Memory>;
+
+#[derive(Deserialize, Serialize)]
 pub struct Post {
     pub id: u64,
     pub description: String,
@@ -23,7 +30,62 @@ pub struct Post {
     pub home_feed_score: FeedScore,
     pub creator_consent_for_inclusion_in_hot_or_not: bool,
     pub hot_or_not_details: Option<HotOrNotDetails>,
+    #[serde(skip, default = "init_room_details")]
+    pub room_details_map: RoomDetailsMap,
+    #[serde(skip, default = "init_bets_placed")]
+    pub bets_placed_map: BetsPlacedMap,
 }
+
+impl Clone for Post {
+    fn clone(&self) -> Self {
+        Post {
+            id: self.id,
+            description: self.description.clone(),
+            hashtags: self.hashtags.clone(),
+            video_uid: self.video_uid.clone(),
+            status: self.status.clone(),
+            created_at: self.created_at,
+            likes: self.likes.clone(),
+            share_count: self.share_count,
+            view_stats: self.view_stats.clone(),
+            home_feed_score: self.home_feed_score.clone(),
+            creator_consent_for_inclusion_in_hot_or_not: self.creator_consent_for_inclusion_in_hot_or_not,
+            hot_or_not_details: self.hot_or_not_details.clone(),
+            room_details_map: init_room_details(),
+            bets_placed_map: init_bets_placed()
+        }
+    }
+}
+
+impl fmt::Debug for Post {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Post")
+            .field("id", &self.id)
+            .field("description", &self.description)
+            .field("hashtags", &self.hashtags)
+            .field("video_uid", &self.video_uid)
+            .field("status", &self.status)
+            .field("created_at", &self.created_at)
+            .field("likes", &self.likes)
+            .field("share_count", &self.share_count)
+            .field("view_stats", &self.view_stats)
+            .field("home_feed_score", &self.home_feed_score)
+            .field("creator_consent_for_inclusion_in_hot_or_not", &self.creator_consent_for_inclusion_in_hot_or_not)
+            .field("hot_or_not_details", &self.hot_or_not_details)
+            .finish()
+    }
+}
+
+
+
+pub fn init_room_details() -> BTreeMap<(u8, u64), RoomDetails, Memory>{
+    BTreeMap::init(memory::get_stable_room_details())
+}
+
+pub fn init_bets_placed() -> BTreeMap<(u64, u64), BetDetails, Memory> {
+    BTreeMap::init(memory::get_stable_bet_details())
+} 
+
 
 #[derive(CandidType, Clone, Deserialize, Debug, Serialize)]
 pub struct FeedScore {
@@ -203,6 +265,8 @@ impl Post {
             } else {
                 None
             },
+            room_details_map: init_room_details(),
+            bets_placed_map: init_bets_placed(),
         }
     }
 
