@@ -82,7 +82,7 @@ mod test {
 
     use shared_utils::canister_specific::individual_user_template::types::{
         hot_or_not::HotOrNotDetails,
-        post::{FeedScore, Post, PostStatus, PostViewStatistics},
+        post::{FeedScore, Post, PostStatus, PostViewStatistics, init_room_details, init_bets_placed},
     };
 
     use super::*;
@@ -105,6 +105,8 @@ mod test {
             home_feed_score: FeedScore::default(),
             creator_consent_for_inclusion_in_hot_or_not: true,
             hot_or_not_details: Some(HotOrNotDetails::default()),
+            room_details_map: init_room_details(),
+            bets_placed_map: init_bets_placed(),
         };
 
         canister_data
@@ -153,6 +155,8 @@ mod test {
             home_feed_score: FeedScore::default(),
             creator_consent_for_inclusion_in_hot_or_not: true,
             hot_or_not_details: Some(HotOrNotDetails::default()),
+            room_details_map: init_room_details(),
+            bets_placed_map: init_bets_placed(),
         };
 
         canister_data
@@ -205,6 +209,8 @@ mod test {
             home_feed_score: FeedScore::default(),
             creator_consent_for_inclusion_in_hot_or_not: true,
             hot_or_not_details: Some(HotOrNotDetails::default()),
+            room_details_map: init_room_details(),
+            bets_placed_map: init_bets_placed()
         };
 
         canister_data

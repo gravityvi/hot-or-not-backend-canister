@@ -1,7 +1,8 @@
-use std::{cmp::Ordering, collections::BTreeMap, time::SystemTime};
+use std::{cmp::Ordering, collections::BTreeMap, time::SystemTime, borrow::Cow};
 
-use candid::{CandidType, Deserialize, Principal};
+use candid::{CandidType, Deserialize, Principal, Encode, Decode};
 use ic_cdk::api::management_canister::provisional::CanisterId;
+use ic_stable_structures::{Storable, BoundedStorable};
 use serde::Serialize;
 
 use crate::common::types::{
@@ -100,6 +101,22 @@ pub struct RoomDetails {
     pub total_not_bets: u64,
 }
 
+impl Storable for RoomDetails {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        Decode!(&bytes, Self).unwrap()
+    }
+}
+
+impl BoundedStorable for RoomDetails {
+    // * 100 kB = 100_000 Bytes
+    const MAX_SIZE: u32 = 100_000;
+    const IS_FIXED_SIZE: bool = false;
+}
+
 pub type BetMaker = Principal;
 
 #[derive(CandidType, Clone, Deserialize, Debug, Serialize)]
@@ -108,6 +125,22 @@ pub struct BetDetails {
     pub bet_direction: BetDirection,
     pub payout: BetPayout,
     pub bet_maker_canister_id: CanisterId,
+}
+
+impl Storable for BetDetails {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }
+
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        Decode!(&bytes, Self).unwrap()
+    }
+}
+
+impl BoundedStorable for BetDetails {
+    // * 100 kB = 100_000 Bytes
+    const MAX_SIZE: u32 = 100_000;
+    const IS_FIXED_SIZE: bool = false;
 }
 
 #[derive(Clone, Deserialize, Debug, CandidType, Serialize, Default)]

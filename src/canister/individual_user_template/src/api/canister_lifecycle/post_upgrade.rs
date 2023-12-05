@@ -1,7 +1,9 @@
 use std::time::Duration;
+use ic_stable_structures::Memory;
 
+use ciborium::de;
 use shared_utils::{
-    canister_specific::individual_user_template::types::arg::IndividualUserTemplateInitArgs,
+    canister_specific::individual_user_template::{types::arg::IndividualUserTemplateInitArgs, memory},
     common::utils::stable_memory_serializer_deserializer,
 };
 
@@ -26,18 +28,19 @@ fn post_upgrade() {
 }
 
 fn restore_data_from_stable_memory() {
-    match stable_memory_serializer_deserializer::deserialize_from_stable_memory::<CanisterData>(
-        BUFFER_SIZE_BYTES,
-    ) {
-        Ok(canister_data) => {
-            CANISTER_DATA.with(|canister_data_ref_cell| {
-                *canister_data_ref_cell.borrow_mut() = canister_data;
-            });
-        }
-        Err(e) => {
-            panic!("Error: {:?}", e);
-        }
-    }
+    let heap_data = memory::get_upgrades_memory();
+    let mut heap_data_len_bytes = [0; 4];
+    heap_data.read(0, &mut heap_data_len_bytes);
+    let heap_data_len = u32::from_le_bytes(heap_data_len_bytes) as usize;
+
+    let mut canister_data_bytes = vec![0; heap_data_len];
+    heap_data.read(4, &mut canister_data_bytes);
+    
+
+    let canister_data = de::from_reader(&*canister_data_bytes).expect("Failed to deserialize heap data");
+    CANISTER_DATA.with(|canister_data_ref_cell| {
+        *canister_data_ref_cell.borrow_mut() = canister_data;
+    });
 }
 
 fn save_upgrade_args_to_memory() {
